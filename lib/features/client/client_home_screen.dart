@@ -84,108 +84,128 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   void _mostrarSelectorTienda() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      backgroundColor: Colors.white,
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Explorar Tienda',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const Text(
-                  'Elige la empresa donde deseas consultar productos y hacer compras:',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 16),
-                ..._tiendas.map((t) {
-                  final slug = t['subdominio'] as String;
-                  final nombre = t['nombreComercial'] ?? slug;
-                  final esSeleccionada = slug == _currentSlug;
-                  final esTech = slug == 'acmecorp';
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: esSeleccionada
-                          ? AppColors.primaryBlue.withValues(alpha: 0.08)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: esSeleccionada
-                            ? AppColors.primaryBlue
-                            : AppColors.border,
-                        width: esSeleccionada ? 1.6 : 1,
-                      ),
-                    ),
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: esTech
-                              ? const Color(0xFFEFF6FF)
-                              : const Color(0xFFFEF2F2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          esTech
-                              ? Icons.laptop_chromebook_rounded
-                              : Icons.checkroom_rounded,
-                          color: esTech
-                              ? AppColors.primaryBlue
-                              : const Color(0xFFDC2626),
-                          size: 22,
-                        ),
-                      ),
-                      title: Text(
-                        nombre,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Explorar Tienda',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Elige la empresa donde deseas consultar productos y hacer compras:',
+                    style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 14),
+                  ..._tiendas.map((t) {
+                    final slug = t['subdominio'] as String;
+                    final nombre = t['nombreComercial'] ?? slug;
+                    final esSeleccionada = slug == _currentSlug;
+                    final esTech = slug == 'acmecorp';
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: esSeleccionada
+                            ? AppColors.primaryBlue.withValues(alpha: 0.08)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
                           color: esSeleccionada
                               ? AppColors.primaryBlue
-                              : AppColors.textPrimary,
+                              : AppColors.border,
+                          width: esSeleccionada ? 1.6 : 1,
                         ),
                       ),
-                      subtitle: Text(
-                        esTech
-                            ? 'Equipos y gadgets tecnológicos • acmecorp'
-                            : 'Moda, calzado y streetwear • oscorp',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      child: ListTile(
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: esTech
+                                ? const Color(0xFFEFF6FF)
+                                : const Color(0xFFFEF2F2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            esTech
+                                ? Icons.laptop_chromebook_rounded
+                                : Icons.checkroom_rounded,
+                            color: esTech
+                                ? AppColors.primaryBlue
+                                : const Color(0xFFDC2626),
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          nombre,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: esSeleccionada
+                                ? AppColors.primaryBlue
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          esTech
+                              ? 'Equipos y gadgets tecnológicos • acmecorp'
+                              : 'Moda, calzado y streetwear • oscorp',
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                        trailing: esSeleccionada
+                            ? const Icon(Icons.check_circle_rounded,
+                                color: AppColors.primaryBlue, size: 22)
+                            : const Icon(Icons.chevron_right_rounded,
+                                color: AppColors.textMuted, size: 22),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _cambiarTienda(slug, nombre);
+                        },
                       ),
-                      trailing: esSeleccionada
-                          ? const Icon(Icons.check_circle_rounded,
-                              color: AppColors.primaryBlue)
-                          : const Icon(Icons.chevron_right_rounded,
-                              color: AppColors.textMuted),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _cambiarTienda(slug, nombre);
-                      },
-                    ),
-                  );
-                }),
-              ],
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
         );
@@ -243,7 +263,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header Superior: Saludo y Selector de Tienda ──
+              // ── Header Superior: Saludo y Notificaciones ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -272,53 +292,167 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     ],
                   ),
 
-                  // Selector de Tienda (Pill Interactivo)
-                  GestureDetector(
-                    onTap: _mostrarSelectorTienda,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryBlue.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            esTech ? Icons.laptop_chromebook_rounded : Icons.checkroom_rounded,
-                            size: 16,
-                            color: AppColors.primaryBlue,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _currentStoreName.length > 15
-                                ? '${_currentStoreName.substring(0, 15)}...'
-                                : _currentStoreName,
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.darkNavy,
+                  // Botón Campana Notificaciones con Dot Rojo
+                  Stack(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.border, width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.keyboard_arrow_down_rounded,
-                              size: 16, color: AppColors.primaryBlue),
-                        ],
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.notifications_none_rounded,
+                          color: AppColors.textPrimary,
+                          size: 20,
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        top: 9,
+                        right: 11,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
+
+              // ── Selector de Tienda Activa (Barra Elegante Full-Width) ──
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _mostrarSelectorTienda,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryBlue.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: esTech
+                                ? const Color(0xFFEFF6FF)
+                                : const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            esTech
+                                ? Icons.laptop_chromebook_rounded
+                                : Icons.checkroom_rounded,
+                            size: 18,
+                            color: esTech
+                                ? AppColors.primaryBlue
+                                : const Color(0xFFDC2626),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    'TIENDA ACTUAL',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textMuted,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.success,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _currentStoreName,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.darkNavy,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlue.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Cambiar',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryBlue,
+                                ),
+                              ),
+                              SizedBox(width: 3),
+                              Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                size: 16,
+                                color: AppColors.primaryBlue,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
 
               // ── Buscador ──
               Container(
