@@ -13,7 +13,6 @@ class ApiConstants {
       return _envBaseUrl;
     }
 
-    // 2. Si es ejecución Web (Chrome)
     if (kIsWeb) {
       return 'http://localhost:8080/api/v1';
     }

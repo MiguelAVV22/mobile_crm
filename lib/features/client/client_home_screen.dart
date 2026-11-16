@@ -3,11 +3,17 @@ import '../../core/constants/colors.dart';
 import '../../core/models/user_session.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/tienda_service.dart';
+import 'product_detail_sheet.dart';
 
 class ClientHomeScreen extends StatefulWidget {
   final UserSession session;
+  final VoidCallback? onGoToCart;
 
-  const ClientHomeScreen({super.key, required this.session});
+  const ClientHomeScreen({
+    super.key,
+    required this.session,
+    this.onGoToCart,
+  });
 
   @override
   State<ClientHomeScreen> createState() => _ClientHomeScreenState();
@@ -28,17 +34,86 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     _inicializarTienda();
   }
 
+  /// Detecta automáticamente el rubro, icono, color y textos según el comercio
+  Map<String, dynamic> _detectarRubroTienda(String nombre, String slug) {
+    final str = '${nombre.toLowerCase()} ${slug.toLowerCase()}';
+    if (str.contains('pet') || str.contains('mascot') || str.contains('veterin') || str.contains('can')) {
+      return {
+        'rubro': 'Mascotas, alimentos y veterinaria',
+        'icon': Icons.pets_rounded,
+        'color': const Color(0xFF10B981),
+        'bgColor': const Color(0xFFECFDF5),
+        'bannerTag': 'TODO PARA TUS MASCOTAS',
+        'bannerTitle1': 'El mejor cuidado,\nahora con ',
+        'bannerTitle2': '20% off',
+        'bannerAction': 'Ver catálogo pet',
+        'bannerIcon': Icons.pets_rounded,
+        'searchPlaceholder': 'Buscar alimentos, accesorios, salud...',
+        'gradient': const [Color(0xFF064E3B), Color(0xFF047857)],
+      };
+    } else if (str.contains('ferret') || str.contains('col') || str.contains('construc') || str.contains('herram')) {
+      return {
+        'rubro': 'Ferretería, herramientas y acabados',
+        'icon': Icons.home_repair_service_rounded,
+        'color': const Color(0xFFF59E0B),
+        'bgColor': const Color(0xFFFEF3C7),
+        'bannerTag': 'FERRETERÍA & CONSTRUCCIÓN',
+        'bannerTitle1': 'Herramientas Pro,\nahora con ',
+        'bannerTitle2': '15% off',
+        'bannerAction': 'Ver catálogo ferretero',
+        'bannerIcon': Icons.build_rounded,
+        'searchPlaceholder': 'Buscar taladros, herramientas, pintura...',
+        'gradient': const [Color(0xFF78350F), Color(0xFFB45309)],
+      };
+    } else if (str.contains('tech') || str.contains('acme') || str.contains('comput') || str.contains('gadget') || str.contains('elect')) {
+      return {
+        'rubro': 'Equipos y gadgets tecnológicos',
+        'icon': Icons.laptop_chromebook_rounded,
+        'color': AppColors.primaryBlue,
+        'bgColor': const Color(0xFFEFF6FF),
+        'bannerTag': 'TECNOLOGÍA OFICIAL',
+        'bannerTitle1': 'Equipos Pro,\nahora con ',
+        'bannerTitle2': '25% off',
+        'bannerAction': 'Ver catálogo tech',
+        'bannerIcon': Icons.devices_other_rounded,
+        'searchPlaceholder': 'Buscar laptops, iPhone, audio...',
+        'gradient': const [Color(0xFF0F172A), Color(0xFF1E3A8A)],
+      };
+    } else if (str.contains('moda') || str.contains('ropa') || str.contains('fashion') || str.contains('oscorp') || str.contains('street')) {
+      return {
+        'rubro': 'Moda, calzado y streetwear',
+        'icon': Icons.checkroom_rounded,
+        'color': const Color(0xFFDC2626),
+        'bgColor': const Color(0xFFFEF2F2),
+        'bannerTag': 'COLECCIÓN STREETWEAR',
+        'bannerTitle1': 'Tu estilo,\nahora con ',
+        'bannerTitle2': '25% off',
+        'bannerAction': 'Ver colección moda',
+        'bannerIcon': Icons.local_mall_rounded,
+        'searchPlaceholder': 'Buscar poleras, sneakers, hoodies...',
+        'gradient': const [Color(0xFF18181B), Color(0xFF7F1D1D)],
+      };
+    } else {
+      return {
+        'rubro': 'Comercio y productos generales',
+        'icon': Icons.storefront_rounded,
+        'color': const Color(0xFF6366F1),
+        'bgColor': const Color(0xFFEEF2FF),
+        'bannerTag': 'TIENDA OFICIAL',
+        'bannerTitle1': 'Catálogo exclusivo,\nahora con ',
+        'bannerTitle2': 'ofertas',
+        'bannerAction': 'Explorar tienda',
+        'bannerIcon': Icons.storefront_rounded,
+        'searchPlaceholder': 'Buscar productos en la tienda...',
+        'gradient': const [Color(0xFF1E1B4B), Color(0xFF4338CA)],
+      };
+    }
+  }
+
   Future<void> _inicializarTienda() async {
-    // Si la sesión del usuario ya tiene un subdominio o nombre, usarlo
+    // Si la sesión del usuario tiene un nombre o subdominio asignado
     if (widget.session.nombreTenant != null && widget.session.nombreTenant!.isNotEmpty) {
-      final nombre = widget.session.nombreTenant!.toLowerCase();
-      if (nombre.contains('oscorp')) {
-        _currentSlug = 'oscorp';
-        _currentStoreName = 'Oscorp Urban Fashion';
-      } else {
-        _currentSlug = 'acmecorp';
-        _currentStoreName = 'Acme Tech Store';
-      }
+      _currentStoreName = widget.session.nombreTenant!;
     }
 
     // Cargar tiendas activas de la BD para el switch
@@ -46,13 +121,19 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     if (mounted) {
       setState(() {
         _tiendas = tiendas;
-        // Sincronizar nombre comercial si existe en la lista
-        final t = tiendas.firstWhere(
-          (item) => item['subdominio'] == _currentSlug,
-          orElse: () => {},
-        );
-        if (t.isNotEmpty && t['nombreComercial'] != null) {
-          _currentStoreName = t['nombreComercial'] as String;
+        if (tiendas.isNotEmpty) {
+          // Buscar si alguna coincide con la sesión del usuario
+          final tMatch = tiendas.firstWhere(
+            (item) {
+              final sNom = widget.session.nombreTenant?.toLowerCase() ?? '';
+              final tNom = item['nombreComercial']?.toString().toLowerCase() ?? '';
+              final tSub = item['subdominio']?.toString().toLowerCase() ?? '';
+              return sNom.isNotEmpty && (sNom == tNom || sNom == tSub || tNom.contains(sNom));
+            },
+            orElse: () => tiendas.first,
+          );
+          _currentSlug = tMatch['subdominio'] as String;
+          _currentStoreName = tMatch['nombreComercial'] ?? tMatch['subdominio'];
         }
       });
     }
@@ -139,7 +220,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     final slug = t['subdominio'] as String;
                     final nombre = t['nombreComercial'] ?? slug;
                     final esSeleccionada = slug == _currentSlug;
-                    final esTech = slug == 'acmecorp';
+                    final info = _detectarRubroTienda(nombre, slug);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -161,18 +242,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                         leading: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: esTech
-                                ? const Color(0xFFEFF6FF)
-                                : const Color(0xFFFEF2F2),
+                            color: info['bgColor'] as Color,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            esTech
-                                ? Icons.laptop_chromebook_rounded
-                                : Icons.checkroom_rounded,
-                            color: esTech
-                                ? AppColors.primaryBlue
-                                : const Color(0xFFDC2626),
+                            info['icon'] as IconData,
+                            color: info['color'] as Color,
                             size: 20,
                           ),
                         ),
@@ -187,9 +262,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           ),
                         ),
                         subtitle: Text(
-                          esTech
-                              ? 'Equipos y gadgets tecnológicos • acmecorp'
-                              : 'Moda, calzado y streetwear • oscorp',
+                          '${info['rubro']} • $slug',
                           style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                         ),
                         trailing: esSeleccionada
@@ -242,7 +315,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final firstName = widget.session.nombreCompleto.split(' ').first;
-    final esTech = _currentSlug == 'acmecorp';
+    final rubroInfo = _detectarRubroTienda(_currentStoreName, _currentSlug);
 
     // Extraer lista única de categorías de los productos reales
     final categorias = _productos
@@ -335,7 +408,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
 
               const SizedBox(height: 14),
 
-              // ── Selector de Tienda Activa (Barra Elegante Full-Width) ──
+              // ── Selector de Tienda Activa (Barra Elegante Full-Width Dinámica) ──
               Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -347,12 +420,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                        color: (rubroInfo['color'] as Color).withValues(alpha: 0.3),
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primaryBlue.withValues(alpha: 0.05),
+                          color: (rubroInfo['color'] as Color).withValues(alpha: 0.06),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
@@ -363,19 +436,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                         Container(
                           padding: const EdgeInsets.all(7),
                           decoration: BoxDecoration(
-                            color: esTech
-                                ? const Color(0xFFEFF6FF)
-                                : const Color(0xFFFEF2F2),
+                            color: rubroInfo['bgColor'] as Color,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
-                            esTech
-                                ? Icons.laptop_chromebook_rounded
-                                : Icons.checkroom_rounded,
+                            rubroInfo['icon'] as IconData,
                             size: 18,
-                            color: esTech
-                                ? AppColors.primaryBlue
-                                : const Color(0xFFDC2626),
+                            color: rubroInfo['color'] as Color,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -423,10 +490,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryBlue.withValues(alpha: 0.08),
+                            color: (rubroInfo['color'] as Color).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
@@ -434,14 +501,14 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryBlue,
+                                  color: rubroInfo['color'] as Color,
                                 ),
                               ),
-                              SizedBox(width: 3),
+                              const SizedBox(width: 3),
                               Icon(
                                 Icons.keyboard_arrow_down_rounded,
                                 size: 16,
-                                color: AppColors.primaryBlue,
+                                color: rubroInfo['color'] as Color,
                               ),
                             ],
                           ),
@@ -470,9 +537,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        esTech
-                            ? 'Buscar laptops, iPhone, audio...'
-                            : 'Buscar poleras, sneakers, hoodies...',
+                        rubroInfo['searchPlaceholder'] as String,
                         style: const TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 13,
@@ -495,9 +560,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
                   gradient: LinearGradient(
-                    colors: esTech
-                        ? [const Color(0xFF0F172A), const Color(0xFF1E3A8A)]
-                        : [const Color(0xFF18181B), const Color(0xFF7F1D1D)],
+                    colors: rubroInfo['gradient'] as List<Color>,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -517,7 +580,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            esTech ? 'TECNOLOGÍA OFICIAL' : 'COLECCIÓN STREETWEAR',
+                            rubroInfo['bannerTag'] as String,
                             style: const TextStyle(
                               fontSize: 9.5,
                               fontWeight: FontWeight.w800,
@@ -536,13 +599,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                               ),
                               children: [
                                 TextSpan(
-                                  text: esTech
-                                      ? 'Equipos Pro,\nahora con '
-                                      : 'Tu estilo,\nahora con ',
+                                  text: rubroInfo['bannerTitle1'] as String,
                                 ),
-                                const TextSpan(
-                                  text: '25% off',
-                                  style: TextStyle(color: Color(0xFF60A5FA)),
+                                TextSpan(
+                                  text: rubroInfo['bannerTitle2'] as String,
+                                  style: const TextStyle(color: Color(0xFF60A5FA)),
                                 ),
                               ],
                             ),
@@ -551,7 +612,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           Row(
                             children: [
                               Text(
-                                esTech ? 'Ver catálogo tech' : 'Ver colección moda',
+                                rubroInfo['bannerAction'] as String,
                                 style: const TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
@@ -575,11 +636,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Icon(
-                          esTech
-                              ? Icons.devices_other_rounded
-                              : Icons.local_mall_rounded,
+                          rubroInfo['bannerIcon'] as IconData,
                           size: 44,
-                          color: const Color(0xFF93C5FD),
+                          color: Colors.white.withValues(alpha: 0.85),
                         ),
                       ),
                     ),
@@ -758,6 +817,15 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                       price: primerPrecio,
                       optionsCount: variantes.length,
                       icon: _getIconForCategory(catName),
+                      onTap: () {
+                        ProductDetailSheet.show(
+                          context,
+                          product: prod,
+                          storeSlug: _currentSlug,
+                          storeName: _currentStoreName,
+                          onGoToCart: widget.onGoToCart,
+                        );
+                      },
                     );
                   },
                 ),
@@ -777,118 +845,126 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     required String price,
     required int optionsCount,
     required IconData icon,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.darkNavy.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Imagen / Icono de producto
-          Stack(
-            children: [
-              Container(
-                height: 115,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF3F5F9),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: Center(
-                  child: Icon(icon, size: 44, color: AppColors.primaryBlue),
-                ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.darkNavy.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    category.length > 12 ? '${category.substring(0, 12)}...' : category,
-                    style: const TextStyle(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryBlue,
-                      letterSpacing: 0.5,
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Imagen / Icono de producto
+              Stack(
+                children: [
+                  Container(
+                    height: 115,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF3F5F9),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    child: Center(
+                      child: Icon(icon, size: 44, color: AppColors.primaryBlue),
                     ),
                   ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        category.length > 12 ? '${category.substring(0, 12)}...' : category,
+                        style: const TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryBlue,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      optionsCount > 1 ? '$optionsCount opciones' : '1 opción',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          price,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.darkNavy,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlue,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.add_shopping_cart_rounded,
+                              size: 14, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  optionsCount > 1 ? '$optionsCount opciones' : '1 opción',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      price,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.darkNavy,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryBlue,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.add_shopping_cart_rounded,
-                          size: 14, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
