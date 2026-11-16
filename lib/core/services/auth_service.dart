@@ -76,5 +76,24 @@ class AuthService {
   static Future<void> logout() async {
     await SessionManager.clearSession();
   }
+
+  /// Consulta la lista de tiendas/empresas activas registradas en la base de datos
+  static Future<List<Map<String, dynamic>>> getTiendasActivas() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/auth/tiendas-activas'),
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final list = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+        return list.map((item) => item as Map<String, dynamic>).toList();
+      }
+    } catch (_) {}
+    // Fallback en caso de que el backend no responda temporalmente
+    return [
+      {'subdominio': 'acmecorp', 'nombreComercial': 'Acme Corp'},
+      {'subdominio': 'oscorp', 'nombreComercial': 'Oscorp'},
+    ];
+  }
 }
 
